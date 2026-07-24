@@ -1,0 +1,61 @@
+{
+  "manifest_version": 3,
+  "name": "Ghostblock",
+  "version": "1.1.0",
+  "description": "Blocks the ads you can't see: invisible click catchers, hidden frames, link hijacks and popunders.",
+  "permissions": [
+    "storage",
+    "declarativeNetRequest",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/main-world.js"],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": true,
+      "match_about_blank": true
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content.js"],
+      "css": ["src/hide.css"],
+      "run_at": "document_start",
+      "world": "ISOLATED",
+      "all_frames": true,
+      "match_about_blank": true
+    }
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "adnets",
+        "enabled": true,
+        "path": "rules/network.json"
+      }
+    ]
+  },
+  "action": {
+    "default_title": "Ghostblock",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  }
+}

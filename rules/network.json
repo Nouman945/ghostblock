@@ -1,0 +1,167 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "requestDomains": [
+        "popads.net",
+        "popcash.net",
+        "popmyads.com",
+        "poperblocker.com",
+        "propellerads.com",
+        "propellerclick.com",
+        "propu.sh",
+        "pushnative.com",
+        "clickadu.com",
+        "clckads.com",
+        "adcash.com",
+        "adsterra.com",
+        "highperformanceformat.com",
+        "profitableratecpm.com",
+        "effectivegatecpm.com",
+        "displayvertising.com",
+        "onclickmega.com",
+        "onclickalgo.com",
+        "onclckpro.com",
+        "hilltopads.net",
+        "hilltopads.com",
+        "exoclick.com",
+        "exdynsrv.com",
+        "exosrv.com",
+        "juicyads.com",
+        "trafficjunky.net",
+        "trafficfactory.biz",
+        "bebi.com",
+        "mgid.com",
+        "servicer.mgid.com",
+        "revcontent.com",
+        "adnxs.com",
+        "adsco.re",
+        "adskeeper.com",
+        "adservice.google.com",
+        "doubleclick.net",
+        "googlesyndication.com",
+        "googleadservices.com",
+        "amazon-adsystem.com",
+        "taboola.com",
+        "outbrain.com",
+        "zedo.com",
+        "smartadserver.com",
+        "criteo.com",
+        "criteo.net",
+        "rubiconproject.com",
+        "pubmatic.com",
+        "openx.net",
+        "casalemedia.com",
+        "sharethrough.com",
+        "media.net",
+        "yieldmo.com",
+        "adform.net",
+        "ad-maven.com",
+        "admaven.com",
+        "waframedia5.com",
+        "vidverto.io",
+        "aslkasjdlkasjd.com",
+        "luckyforbet.com",
+        "tsyndicate.com",
+        "trafficshop.com",
+        "coinzillatag.com",
+        "coinzilla.io",
+        "a-ads.com",
+        "cointraffic.io",
+        "monetag.com",
+        "zeusadx.com",
+        "fizzledesire.com",
+        "acoupfoughty.com",
+        "pubinstancesglorious.com",
+        "histats.com"
+      ],
+      "resourceTypes": [
+        "script",
+        "sub_frame",
+        "xmlhttprequest",
+        "image",
+        "media",
+        "object",
+        "ping",
+        "websocket",
+        "font",
+        "stylesheet",
+        "other"
+      ]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "*/popunder*",
+      "resourceTypes": ["script", "sub_frame", "xmlhttprequest"]
+    }
+  },
+  {
+    "id": 3,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "*/pop.js",
+      "resourceTypes": ["script"]
+    }
+  },
+  {
+    "id": 4,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "*/pu.js",
+      "resourceTypes": ["script"]
+    }
+  },
+  {
+    "id": 5,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "*/aclib*",
+      "resourceTypes": ["script"]
+    }
+  },
+  {
+    "id": 6,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "*/prebid*",
+      "resourceTypes": ["script"]
+    }
+  },
+  {
+    "id": 7,
+    "priority": 2,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||cloudnestra.com/asdf.js",
+      "resourceTypes": ["script"]
+    }
+  },
+  {
+    "id": 8,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "disable-devtool",
+      "resourceTypes": ["script"]
+    }
+  },
+  {
+    "id": 9,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "regexFilter": "^https?://[^/]+/[0-9a-f]{32}/invoke\\.js",
+      "resourceTypes": ["script"]
+    }
+  }
+]

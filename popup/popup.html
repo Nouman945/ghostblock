@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Ghostblock</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --fg: #14181f;
+        --muted: #6b7280;
+        --line: rgba(120, 130, 145, 0.22);
+        --card: rgba(120, 130, 145, 0.07);
+        --accent: #e0384a;
+        --accent-soft: rgba(224, 56, 74, 0.12);
+        --track: rgba(120, 130, 145, 0.32);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #12161e;
+          --fg: #eef1f6;
+          --muted: #9aa3b2;
+          --line: rgba(150, 160, 180, 0.18);
+          --card: rgba(150, 160, 180, 0.08);
+          --accent: #ff4757;
+          --accent-soft: rgba(255, 71, 87, 0.16);
+          --track: rgba(150, 160, 180, 0.28);
+        }
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        width: 328px;
+        margin: 0;
+        padding: 14px;
+        background: var(--bg);
+        color: var(--fg);
+        font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      }
+
+      header { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
+      header img { width: 26px; height: 26px; border-radius: 7px; }
+      header h1 { font-size: 15px; font-weight: 650; margin: 0; letter-spacing: -0.01em; }
+      header .sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+      .stat {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        padding: 12px 14px;
+        display: flex;
+        align-items: baseline;
+        gap: 9px;
+        margin-bottom: 12px;
+      }
+      .stat b { font-size: 27px; font-weight: 660; letter-spacing: -0.02em; line-height: 1; }
+      .stat b.hot { color: var(--accent); }
+      .stat .lbl { font-size: 12px; color: var(--muted); }
+      .stat .host {
+        margin-left: auto;
+        font-size: 11px;
+        color: var(--muted);
+        max-width: 128px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 2px;
+        border-bottom: 1px solid var(--line);
+      }
+      .row:last-of-type { border-bottom: 0; }
+      .row .txt { flex: 1; min-width: 0; }
+      .row .txt span { display: block; font-size: 11px; color: var(--muted); margin-top: 1px; }
+      .row.disabled { opacity: 0.45; pointer-events: none; }
+
+      input[type="checkbox"] {
+        appearance: none;
+        flex: 0 0 auto;
+        width: 34px;
+        height: 20px;
+        border-radius: 999px;
+        background: var(--track);
+        position: relative;
+        cursor: pointer;
+        transition: background 0.16s;
+        margin: 0;
+      }
+      input[type="checkbox"]::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        transition: transform 0.16s;
+      }
+      input[type="checkbox"]:checked { background: var(--accent); }
+      input[type="checkbox"]:checked::after { transform: translateX(14px); }
+
+      button {
+        width: 100%;
+        margin-top: 12px;
+        padding: 8px;
+        font: inherit;
+        font-weight: 550;
+        color: var(--fg);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        cursor: pointer;
+      }
+      button:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+      h2 {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+        margin: 15px 0 7px;
+      }
+      #list { max-height: 176px; overflow-y: auto; margin: 0 -4px; padding: 0 4px; }
+      .item { padding: 6px 0; border-bottom: 1px solid var(--line); }
+      .item:last-child { border-bottom: 0; }
+      .item b {
+        display: inline-block;
+        font-size: 10.5px;
+        font-weight: 600;
+        color: var(--accent);
+        background: var(--accent-soft);
+        border-radius: 5px;
+        padding: 1px 6px;
+      }
+      .item i {
+        display: block;
+        font-style: normal;
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 3px;
+        word-break: break-all;
+      }
+      .empty { color: var(--muted); font-size: 12px; padding: 4px 0; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <img src="../icons/icon48.png" alt="" />
+      <div>
+        <h1>Ghostblock</h1>
+        <div class="sub">Blocks the ads you can't see</div>
+      </div>
+    </header>
+
+    <div class="stat">
+      <b id="n">0</b>
+      <div class="lbl">blocked here</div>
+      <div class="host" id="site"></div>
+    </div>
+
+    <div class="row">
+      <div class="txt">Protection<span>Master switch, all sites</span></div>
+      <input type="checkbox" id="enabled" />
+    </div>
+    <div class="row" id="allowRow">
+      <div class="txt">Allow this site<span>Turn Ghostblock off here only</span></div>
+      <input type="checkbox" id="allow" />
+    </div>
+    <div class="row">
+      <div class="txt">On-page button<span>Floating toggle, bottom right</span></div>
+      <input type="checkbox" id="button" />
+    </div>
+    <div class="row">
+      <div class="txt">Debug mode<span>Outline instead of hiding</span></div>
+      <input type="checkbox" id="debug" />
+    </div>
+
+    <button id="rescan">Rescan page</button>
+
+    <h2>Recent activity</h2>
+    <div id="list"><div class="empty">Nothing blocked yet.</div></div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

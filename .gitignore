@@ -1,0 +1,6 @@
+# Chrome writes this when loading the folder as an unpacked extension
+_metadata/
+
+*.zip
+.DS_Store
+node_modules/
