@@ -25,9 +25,8 @@
 
   const FRAME_TAGS = new Set(['IFRAME', 'EMBED', 'OBJECT']);
 
-  // A frame this big is content, and player chains nest several of these across
-  // origins. Set above the common ad rectangles (300x250, 336x280, 728x90) so a
-  // banner wrapper is not mistaken for a player.
+  // Above the common ad rectangles (300x250, 336x280, 728x90) so a banner
+  // wrapper is never read as a player.
   const PLAYER_MIN_W = 400;
   const PLAYER_MIN_H = 225;
 
@@ -55,29 +54,23 @@
 
   const frameSrc = (el) => el.src || el.getAttribute('src') || el.getAttribute('data-src') || el.getAttribute('data') || '';
 
-  // An element that is, or wraps, a large frame is the player, not an ad. Player
-  // wrappers hold nothing but an iframe, so a plain "has no text or image" test
-  // reads them as empty click catchers and hides the video. A frame seen at
-  // player size once is exempt forever, since players get hidden and reshown for
-  // loading states and quality switches.
   const everLarge = new WeakSet();
 
+  // A wrapper holds nothing but an iframe, so a "no text or image" test reads it
+  // as a click catcher. Paint state is ignored: closed modals still lay out.
   function wrapsPlayer(el) {
     const f = FRAME_TAGS.has(el.tagName) || el.tagName === 'VIDEO' ? el : el.querySelector('iframe, embed, object, video');
     if (!f) return false;
     const r = f.getBoundingClientRect();
     if (r.width < PLAYER_MIN_W || r.height < PLAYER_MIN_H) return false;
-    // Deliberately not checking paint state. A closed trailer modal still lays
-    // its player out at full size, and a player is content whether or not it
-    // happens to be on screen right now.
     everLarge.add(f);
     return true;
   }
 
   const VISIBLE_CONTENT = 'img, svg, video, canvas, picture, iframe, embed, object';
 
-  // The element itself counts. A full-bleed backdrop <img> has no descendants
-  // and no text, so a contains-only test reads it as an empty click catcher.
+  // A full-bleed backdrop <img> has no descendants and no text, so the element
+  // itself has to count.
   const hasVisibleContent = (el) =>
     el.matches(VISIBLE_CONTENT) || el.querySelector(VISIBLE_CONTENT) || el.textContent.trim().length > 0;
 
@@ -86,9 +79,8 @@
     if (SKIP_TAGS.has(tag)) return null;
     if (el.hasAttribute('data-gb') || el.closest('[data-gb-ui]')) return null;
     if (tag === 'VIDEO' || tag === 'CANVAS') return null;
-    // Other extensions inject custom elements at the top of the z range
-    // (Grammarly parks a card at 2147483646). Ad injectors use plain
-    // div/a/iframe/ins, so a hyphenated tag is somebody else's UI.
+    // Ad injectors use plain div/a/iframe/ins, so a hyphenated tag is another
+    // extension's UI. Grammarly parks a card at 2147483646.
     if (tag.includes('-')) return null;
     if (wrapsPlayer(el)) return null;
 
@@ -100,10 +92,8 @@
     if (FRAME_TAGS.has(tag)) {
       const src = frameSrc(el);
       if (!src || !isThirdParty(src) || isSafeHost(src)) return null;
-      // Every frame rule waits for a laid-out element. Before layout a frame
-      // measures 0x0 and computes as hidden, and a player judged in that window
-      // gets killed on every load. One tick of latency on a tracker pixel is
-      // the cheaper trade.
+      // Before layout a frame measures 0x0 and computes as hidden. Judging a
+      // player in that window kills it on every load.
       if (!mature) return null;
       if (everLarge.has(el)) return null;
       if (r.width <= 3 || r.height <= 3) return 'zero-size third-party frame';
@@ -116,10 +106,8 @@
     const pos = cs.position;
     if (pos !== 'fixed' && pos !== 'absolute') return null;
 
-    // Cannot receive a click, so it cannot be catching one. This is the standard
-    // closed-modal pattern (fixed, full size, visibility:hidden, opacity:0),
-    // which is laid out at full viewport size and otherwise reads as a catcher.
-    // opacity:0 alone stays a threat, since those do take clicks.
+    // Cannot receive a click, so cannot be catching one. This is the closed-modal
+    // pattern. opacity:0 alone still takes clicks and stays a threat.
     if (cs.visibility === 'hidden' || cs.display === 'none') return null;
 
     const area = r.width * r.height;
@@ -127,9 +115,8 @@
     const coversViewport = r.width >= vw * 0.7 && r.height >= vh * 0.5;
     const z = parseInt(cs.zIndex, 10) || 0;
 
-    // Ad layers claim the top of the int32 range (2147483640, 2147483650).
-    // No real UI does. They ship pointer-events:none and flip it on first click,
-    // so this has to fire before the flip.
+    // Ad layers sit at the top of the int32 range, shipping pointer-events:none
+    // and flipping it on the first click, so this has to fire before the flip.
     if (coversViewport && z >= 1000000 && !hasVisibleContent(el)) return 'max z-index ad layer';
 
     if (cs.pointerEvents === 'none') return null;
@@ -156,8 +143,7 @@
     } else {
       el.style.setProperty('display', 'none', 'important');
       el.style.setProperty('pointer-events', 'none', 'important');
-      // Blanking src cannot be undone without a reload, so it is reserved for
-      // tracker-pixel frames. Everything else is only hidden.
+      // Blanking src needs a reload to undo, so only tracker pixels get it.
       if (FRAME_TAGS.has(el.tagName) && reason.startsWith('zero-size')) {
         try {
           el.src = 'about:blank';
@@ -186,7 +172,7 @@
   }
 
   // Overlays are body children or carry inline positioning. Scanning every div
-  // would force a layout pass per element on each tick.
+  // would force a layout pass per element per tick.
   const CANDIDATES = [
     'iframe',
     'embed',
@@ -241,8 +227,7 @@
     if (dirty) schedule();
   });
 
-  // Peel ad layers sitting under the pointer before the click resolves, so the
-  // click lands on whatever is actually beneath them.
+  // Peel ad layers from under the pointer so the click lands on what is beneath.
   function shieldAt(x, y) {
     if (!document.elementsFromPoint) return;
     for (const el of document.elementsFromPoint(x, y)) {
@@ -297,7 +282,6 @@
     report();
   });
 
-  // On-page toggle, top frame only.
   let btn = null;
   let label = null;
 
@@ -356,8 +340,8 @@
     observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class', 'src'] });
     sweep(document);
 
-    // These SDKs re-inject on a forever setInterval (2.5s on 123movies), so the
-    // sweep can never stop. Fast while the page settles, then a cheap backstop.
+    // These SDKs re-inject on a forever interval, so the sweep cannot stop. Fast
+    // while the page settles, then a cheap backstop.
     let n = 0;
     let tick = setInterval(() => {
       sweep(document);

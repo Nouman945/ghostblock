@@ -1,17 +1,14 @@
 (() => {
   let enabled = true;
 
-  // The isolated script reads storage asynchronously, so we start blocking and
-  // stand down only if this site is allowlisted.
+  // Storage reads are async, so block first and stand down if allowlisted.
   addEventListener('__gb_cfg', (e) => {
     enabled = !!(e.detail && e.detail.enabled);
     if (!enabled) restore();
   });
 
-  // The SDK runs open.toString().includes('[native code]') and, when it sees a
-  // patch, builds a clean about:blank iframe and calls that realm's open
-  // instead. Patched functions have to keep reading as native or every hook
-  // below is routed around.
+  // The SDK checks open.toString() for [native code] and routes around anything
+  // patched, so every hook below has to keep reading as native.
   const nativeToString = Function.prototype.toString;
   const spoofed = new WeakSet();
 
@@ -56,8 +53,8 @@
     }
   };
 
-  // Popunders fire window.open from a click on unrelated page chrome (the player,
-  // the body). A genuine link opens the same href the user pressed.
+  // A real link opens the href the user pressed. Popunders fire from a click
+  // anywhere else on the page.
   const isUserIntent = (url) => {
     if (!url) return false;
     if (Date.now() - lastClick.at > 1000) return false;
@@ -69,9 +66,8 @@
     }
   };
 
-  // The SDK polls popup.closed to learn whether the popunder landed. Reporting
-  // closed immediately advertises the block and it retries by another route.
-  // Looking open for a few seconds reads as a served impression instead.
+  // The SDK polls closed to see if the popunder landed. Reporting closed right
+  // away tells it we blocked, and it retries by another route.
   const stubWindow = () => {
     const noop = () => {};
     const born = Date.now();
@@ -111,9 +107,8 @@
     };
   };
 
-  // Their cap is "one impression per hour, reset if the tab was away 60s".
-  // Refreshing the stamp after a block makes the cap do our work for us. Only
-  // touched when the key already exists, so innocent sites are left alone.
+  // Their own cap is one impression per hour, so refreshing the stamp suppresses
+  // the next attempt. Only touched when the key exists, never created.
   const markServed = () => {
     try {
       if (localStorage.getItem('shown_at') !== null) localStorage.setItem('shown_at', String(Date.now()));
@@ -140,8 +135,8 @@
     return nativeAnchorClick.apply(this, arguments);
   };
 
-  // 123movies-style SDKs skip window.open entirely: build a form, target _blank,
-  // submit, remove. Nothing else on a page submits a cross-site _blank form.
+  // The popunder path skips window.open: hidden form, target _blank, submit,
+  // remove. Nothing legitimate submits a cross-site _blank form.
   const nativeSubmit = HTMLFormElement.prototype.submit;
   const nativeRequestSubmit = HTMLFormElement.prototype.requestSubmit;
 
@@ -169,8 +164,8 @@
   looksNative(HTMLFormElement.prototype.submit, 'submit');
   looksNative(HTMLFormElement.prototype.requestSubmit, 'requestSubmit');
 
-  // Second escape route: create an about:blank iframe and call that realm's
-  // untouched open. Patch each child realm the moment the page reaches for it.
+  // A fresh about:blank iframe has an untouched open, so patch each child realm
+  // as the page reaches for it.
   const frameDesc = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentWindow');
   const patchedRealms = new WeakSet();
 
@@ -183,7 +178,7 @@
         if (enabled && w && !patchedRealms.has(w)) {
           patchedRealms.add(w);
           try {
-            // Throws for cross-origin realms, which cannot be reached anyway.
+            // Throws for cross-origin realms, which are unreachable anyway.
             const childOpen = w.open;
             w.open = function (url) {
               if (sameSite(url) || isUserIntent(url)) return childOpen.apply(w, arguments);
@@ -200,11 +195,8 @@
     looksNative(Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentWindow').get, 'get contentWindow');
   }
 
-  // The frame chain relays postMessage blindly in both directions with no origin
-  // check, so a click in the deepest player frame reaches the SDK on the top
-  // page as an @@other-clicks-click command. Registered at document_start, this
-  // listener runs before the SDK's and cuts the command out of the relay.
-  // Player telemetry (play, pause, timeupdate) is left alone.
+  // The frame chain relays postMessage with no origin check, so a click in a
+  // nested player frame reaches the SDK up here. Registered first, so it wins.
   addEventListener(
     'message',
     (e) => {
@@ -224,7 +216,7 @@
     true
   );
 
-  // Popunder scripts re-register these on every navigation attempt.
+  // Popunders re-arm this on every navigation attempt.
   const killer = (name) => {
     try {
       Object.defineProperty(window, name, { get: () => null, set: () => {}, configurable: true });
