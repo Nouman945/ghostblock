@@ -301,8 +301,6 @@
       'button:hover{opacity:1;transform:translateY(-1px)}' +
       'svg{width:15px;height:15px;flex:0 0 auto}' +
       '.n{font-variant-numeric:tabular-nums;letter-spacing:-.01em}' +
-      'button.off .n{color:#9aa3b2}' +
-      'button.off .slash{opacity:0}' +
       '</style>' +
       '<button>' +
       '<svg viewBox="0 0 24 24" fill="none">' +
@@ -311,27 +309,20 @@
       '</svg><span class="n"></span></button>';
     btn = root.querySelector('button');
     label = root.querySelector('.n');
-    btn.addEventListener('click', toggleSite);
+    btn.addEventListener('click', toggleTab);
     document.documentElement.appendChild(host);
     paintButton();
   }
 
   function paintButton() {
     if (!btn) return;
-    btn.classList.toggle('off', !cfg.enabled);
-    label.textContent = cfg.enabled ? String(blockedCount) : 'off';
-    btn.title = cfg.enabled
-      ? 'Ghostblock on, ' + blockedCount + ' blocked. Click to turn off for this site.'
-      : 'Ghostblock off for this site. Click to turn on.';
+    label.textContent = String(blockedCount);
+    btn.title = 'Ghostblock on, ' + blockedCount + ' blocked. Click to turn off for this tab.';
   }
 
-  async function toggleSite() {
-    const host = location.hostname.replace(/^www\./, '');
-    const { allowlist = [] } = await chrome.storage.local.get({ allowlist: [] });
-    const next = cfg.enabled ? [...new Set([...allowlist, host])] : allowlist.filter((h) => h !== host);
-    await chrome.storage.local.set({ allowlist: next });
+  async function toggleTab() {
     try {
-      await chrome.runtime.sendMessage({ type: 'allowlistChanged', allowlist: next });
+      await chrome.runtime.sendMessage({ type: 'setActive', active: false });
     } catch {}
     location.reload();
   }
@@ -362,15 +353,23 @@
     else addEventListener('DOMContentLoaded', buildButton, { once: true });
   }
 
-  chrome.storage.local.get({ enabled: true, debug: false, button: true, allowlist: [] }, (s) => {
-    const host = location.hostname.replace(/^www\./, '');
-    cfg.enabled = s.enabled && !s.allowlist.includes(host);
+  // Protection is opt-in per tab. Everything above stays dormant until the
+  // background confirms the user turned this tab on.
+  (async () => {
+    let active = false;
+    try {
+      active = (await chrome.runtime.sendMessage({ type: 'hello' })) === true;
+    } catch {}
+    const s = await chrome.storage.local.get({ debug: false, button: true });
+    cfg.enabled = active;
     cfg.debug = s.debug;
     cfg.button = s.button;
     dispatchEvent(new CustomEvent('__gb_cfg', { detail: { enabled: cfg.enabled } }));
-    if (cfg.enabled) start();
-    mountUi();
-  });
+    if (cfg.enabled) {
+      start();
+      mountUi();
+    }
+  })();
 
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg && msg.type === 'rescan' && cfg.enabled) sweep(document);

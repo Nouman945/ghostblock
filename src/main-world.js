@@ -1,7 +1,8 @@
 (() => {
   let enabled = true;
 
-  // Storage reads are async, so block first and stand down if allowlisted.
+  // The tab check is async, so block first and stand down if this tab is not
+  // one the user turned protection on for.
   addEventListener('__gb_cfg', (e) => {
     enabled = !!(e.detail && e.detail.enabled);
     if (!enabled) restore();

@@ -8,14 +8,13 @@ async function init() {
   $('site').textContent = host || 'not a web page';
   $('site').title = host;
 
-  const s = await chrome.storage.local.get({ enabled: true, debug: false, button: true, allowlist: [] });
-  $('enabled').checked = s.enabled;
+  const s = await chrome.storage.local.get({ debug: false, button: true });
   $('debug').checked = s.debug;
   $('button').checked = s.button;
-  $('allow').checked = s.allowlist.includes(host);
-  if (!host) $('allowRow').classList.add('disabled');
 
   const info = await chrome.runtime.sendMessage({ type: 'getTab', tabId: tab.id });
+  $('enabled').checked = info.active;
+  if (!host) $('enabledRow').classList.add('disabled');
   $('n').textContent = info.count;
   $('n').classList.toggle('hot', info.count > 0);
   render(info.items);
@@ -39,17 +38,13 @@ function render(items) {
 
 const persist = (patch) => chrome.storage.local.set(patch).then(() => chrome.tabs.reload(tab.id));
 
-$('enabled').onchange = (e) => persist({ enabled: e.target.checked });
-$('debug').onchange = (e) => persist({ debug: e.target.checked });
-$('button').onchange = (e) => persist({ button: e.target.checked });
-
-$('allow').onchange = async (e) => {
-  const { allowlist } = await chrome.storage.local.get({ allowlist: [] });
-  const next = e.target.checked ? [...new Set([...allowlist, host])] : allowlist.filter((h) => h !== host);
-  await chrome.storage.local.set({ allowlist: next });
-  await chrome.runtime.sendMessage({ type: 'allowlistChanged', allowlist: next });
+$('enabled').onchange = async (e) => {
+  await chrome.runtime.sendMessage({ type: 'setActive', tabId: tab.id, active: e.target.checked });
   chrome.tabs.reload(tab.id);
 };
+
+$('debug').onchange = (e) => persist({ debug: e.target.checked });
+$('button').onchange = (e) => persist({ button: e.target.checked });
 
 $('rescan').onclick = () => chrome.tabs.sendMessage(tab.id, { type: 'rescan' }).catch(() => {});
 

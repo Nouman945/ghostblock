@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Ghostblock",
-  "version": "1.1.0",
-  "description": "Blocks the ads you can't see: invisible click catchers, hidden frames, link hijacks and popunders.",
+  "version": "1.2.0",
+  "description": "Blocks the ads you can't see: invisible click catchers, hidden frames, link hijacks and popunders. Per tab, on demand.",
   "permissions": [
     "storage",
     "declarativeNetRequest",
-    "tabs"
+    "tabs",
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -32,22 +33,12 @@
     {
       "matches": ["<all_urls>"],
       "js": ["src/content.js"],
-      "css": ["src/hide.css"],
       "run_at": "document_start",
       "world": "ISOLATED",
       "all_frames": true,
       "match_about_blank": true
     }
   ],
-  "declarative_net_request": {
-    "rule_resources": [
-      {
-        "id": "adnets",
-        "enabled": true,
-        "path": "rules/network.json"
-      }
-    ]
-  },
   "action": {
     "default_title": "Ghostblock",
     "default_popup": "popup/popup.html",

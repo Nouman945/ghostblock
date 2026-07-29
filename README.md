@@ -49,11 +49,12 @@ Chrome 111+. No build step, no dependencies.
 
 <img src="docs/popup.png" width="320" align="right" alt="Ghostblock popup">
 
-The toolbar popup shows what got blocked on the tab, and which rule caught each item.
+Ghostblock is off by default everywhere. Open the popup on the tab you want protected and flip **Protect this tab** — it does nothing on any other tab. Protection sticks to that tab across reloads and navigation, and clears when the tab closes or the browser restarts.
 
-- **Protection** — master switch, all sites
-- **Allow this site** — turn it off for one site only
-- **On-page button** — a floating pill, bottom right, showing the live count. Click it to switch the current site off. Lives in a closed shadow root so page CSS can't touch it.
+The popup shows what got blocked on the tab, and which rule caught each item.
+
+- **Protect this tab** — the switch. Everything (overlay scanning, popunder hooks, network rules) is scoped to tabs where this is on.
+- **On-page button** — a floating pill, bottom right, showing the live count on protected tabs. Click it to turn the tab off. Lives in a closed shadow root so page CSS can't touch it.
 - **Debug mode** — outlines suspects in red instead of hiding them
 
 New site you care about? Turn on debug mode first and see what it would touch before trusting it. If something breaks, the popup names the exact element and rule that fired.
@@ -77,7 +78,7 @@ That last rule is why closed modals and lightboxes survive. Trailer modals are t
 |---|---|
 | `src/main-world.js` | Runs in the page's JS world at `document_start`. Patches `window.open`, anchor `click`, form `submit`, and `contentWindow`. |
 | `src/content.js` | Classifies elements on mutation and on a timer. Peels ad layers out from under the pointer before a click resolves. |
-| `rules/network.json` | declarativeNetRequest blocklist and pattern rules. |
+| `rules/network.json` | declarativeNetRequest blocklist and pattern rules, registered as session rules scoped to protected tabs. |
 
 Two details worth knowing, because they're what these SDKs actually do:
 
@@ -90,13 +91,14 @@ Two details worth knowing, because they're what these SDKs actually do:
 - `SAFE_HOSTS` in `src/content.js` — third parties that legitimately load hidden frames (reCAPTCHA, Stripe, PayPal, YouTube/Vimeo embeds)
 - `classify()` thresholds — viewport coverage and z-index cutoffs
 - `rules/network.json` — add domains you see in DevTools Network
-- `src/hide.css` — static rules, applied before any JS runs
+- `src/hide.css` — static rules, injected into protected tabs
 
 ## Limits
 
 - `baseDomain()` takes the last two labels, so `foo.co.uk` and `bar.co.uk` read as same-site
 - Handles the hidden layer only. Run it alongside uBlock Origin for visible banners
-- On an allowlisted site, patches are active for a few ms before the stand-down message arrives. No clean fix in MV3
+- On unprotected tabs, the page-world patches are active for a few ms before the stand-down message arrives. No clean fix in MV3
+- Protection is per tab, not per site — a link opened in a new tab starts unprotected
 
 ## Research
 
