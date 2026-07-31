@@ -77,7 +77,7 @@ That last rule is why closed modals and lightboxes survive. Trailer modals are t
 | File | Role |
 |---|---|
 | `src/main-world.js` | Runs in the page's JS world at `document_start`. Patches `window.open`, anchor `click`, form `submit`, and `contentWindow`. |
-| `src/content.js` | Classifies elements on mutation and on a timer. Peels ad layers out from under the pointer before a click resolves. |
+| `src/content.js` | Classifies elements on mutation and on a timer. Peels ad layers out from under the pointer before a click resolves, then hands focus to what was underneath so keyboard seeking keeps working. |
 | `rules/network.json` | declarativeNetRequest blocklist and pattern rules, registered as session rules scoped to protected tabs. |
 
 Two details worth knowing, because they're what these SDKs actually do:

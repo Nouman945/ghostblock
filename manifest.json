@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Ghostblock",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "description": "Blocks the ads you can't see: invisible click catchers, hidden frames, link hijacks and popunders. Per tab, on demand.",
   "permissions": [
     "storage",

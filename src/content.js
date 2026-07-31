@@ -229,7 +229,8 @@
 
   // Peel ad layers from under the pointer so the click lands on what is beneath.
   function shieldAt(x, y) {
-    if (!document.elementsFromPoint) return;
+    if (!document.elementsFromPoint) return false;
+    let peeled = false;
     for (const el of document.elementsFromPoint(x, y)) {
       if (!(el instanceof Element) || SKIP_TAGS.has(el.tagName)) break;
       if (el.hasAttribute('data-gb')) continue;
@@ -239,13 +240,40 @@
       } catch {}
       if (!reason) break;
       neutralize(el, reason);
+      peeled = true;
     }
+    return peeled;
+  }
+
+  // The overlay swallowed the mousedown, so the player never got keyboard
+  // focus and arrow-key seeking is dead until the user clicks it again. Hand
+  // focus to what the peel revealed instead. No synthetic click here: the
+  // user's own click still lands, and a fake one pairs with it into a
+  // double-click, which players treat as a fullscreen toggle.
+  function refocus(x, y) {
+    const el = document.elementFromPoint(x, y);
+    if (!(el instanceof Element) || el.closest('[data-gb-ui]')) return;
+    const target = el.closest('video, iframe, embed, object, [tabindex]') || el.querySelector('video, iframe') || el;
+    try {
+      target.focus({ preventScroll: true });
+      if (document.activeElement !== target && !target.hasAttribute('tabindex')) {
+        target.setAttribute('tabindex', '-1');
+        target.focus({ preventScroll: true });
+      }
+    } catch {}
   }
 
   addEventListener(
     'pointerdown',
     (e) => {
-      if (cfg.enabled && !cfg.debug && e.isTrusted) shieldAt(e.clientX, e.clientY);
+      if (!cfg.enabled || cfg.debug || !e.isTrusted) return;
+      if (shieldAt(e.clientX, e.clientY)) {
+        const x = e.clientX;
+        const y = e.clientY;
+        // After the browser's own mousedown focus pass, which still saw the
+        // old, now hidden target.
+        setTimeout(() => refocus(x, y), 0);
+      }
     },
     true
   );
@@ -265,10 +293,8 @@
       if (covers || !hasVisibleContent(a)) {
         e.preventDefault();
         e.stopImmediatePropagation();
-        blockedCount++;
-        hits.push({ reason: 'blocked overlay click', tag: 'a', id: a.id || '', cls: a.href.slice(0, 80) });
-        paintButton();
-        report();
+        neutralize(a, 'blocked overlay click');
+        refocus(e.clientX, e.clientY);
       }
     },
     true
